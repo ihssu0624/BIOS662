@@ -1,0 +1,164 @@
+---
+title: "BIOS_662_HW2"
+author: "Claire Su"
+date: "2018/09/11"
+output: html_document
+---
+# Problem 1
+
+a.
+Use R or SAS to draw a histogram and boxplot of systolic blood
+pressure for all 200 women (that is, do not separate those who did and
+did not have an MI).
+
+```{r}
+##load dataset 
+library(readr)
+library(tidyverse)
+```
+
+```{r, message=FALSE}
+HW2_SBP <- read_table2("~/Documents/GitHub/BIOS662/HW2_SBP.txt", 
+    col_names = FALSE) %>% data.frame()
+##clean dataset so that we have two columns with appropriate variable name
+HW2_SBP <- HW2_SBP[,-3]
+HW2_SBP <- HW2_SBP %>% plyr::rename(replace=c("X1"="MI", "X2"= "SBP"))
+
+##draw histogram of SBP
+ggplot(HW2_SBP, aes(x=SBP)) +
+  geom_histogram(color="black", fill="white")
+
+##draw boxplot of SBP
+ggplot(HW2_SBP, aes(y=SBP)) + geom_boxplot()
+
+```
+
+b.
+Using the definition of percentile from the class notes, compute the
+25th, 50th (i.e., median) and 75th percentiles.
+
+```{r}
+quantile(HW2_SBP$SBP, 0.25, type=2)
+quantile(HW2_SBP$SBP, 0.5, type=2)
+quantile(HW2_SBP$SBP, 0.75, type=2)
+```
+
+* Answer: 
+The 25th, 50th (i.e., median) and 75th percentiles of SBP are 107,118, and 130, respectively.
+
+c.
+Determine the IQR
+
+```{r}
+q1 <- quantile(HW2_SBP$SBP, 0.25, type=2)
+q3 <- quantile(HW2_SBP$SBP, 0.75, type=2)
+IQR <- q3-q1
+IQR
+```
+
+* Answer: 
+The IQR of SBP is 23.
+
+d.
+Find the largest observation ≤ 75th percentile + 1.5 IQR and the
+smallest observation ≥ 25th percentile − 1.5 IQR (i.e., the extent of the
+“whiskers”). Based on these results, does the computed boxplot appear
+to agree with the definition of a boxplot from our notes? If not,
+investigate the discrepancy and report your findings.
+
+```{r}
+q1 <- quantile(HW2_SBP$SBP, 0.25, type=2)
+q3 <- quantile(HW2_SBP$SBP, 0.75, type=2)
+IQR <- q3-q1
+largest <- max(HW2_SBP$SBP[which(HW2_SBP$SBP <= q3 + 1.5*IQR)]) 
+largest
+smallest <- min(HW2_SBP$SBP[which(HW2_SBP$SBP >= q1 - 1.5*IQR)])
+smallest
+
+```
+
+* Answer: 
+The 75th percentile calculated from `Q3 + 1.5 * IQR` is `164.5` and the 25th percentile calculated from `Q1 - 1.5 * IQR` is 72.5. The boxplot shows the largest observation ≤ 75th percentile + 1.5 IQR, which is 162, and the
+smallest observation ≥ 25th percentile − 1.5 IQR, which is 82. This agrees with the definitions in our notes.
+
+e.
+Use a plot to compare the distribution of systolic blood pressure in
+those who had an MI against that of those who did not. Do blood
+pressures in the two groups appear to differ? If so, in what direction?
+
+```{r}
+HW2_SBP$MI <- as.factor(HW2_SBP$MI)
+ggplot(HW2_SBP, aes(x=MI,y=SBP)) + geom_boxplot()
+ 
+```
+
+* Answer: 
+I created two boxplot to see the difference in distribution between the two groups. From the boxplots, it seems that the distribution of SBP in women without MI has a tighter spread and is generally lower compared to that in women with MI. This can be seen by the median and third quantile of the SBP distribution in women without MI be lower than those in women with MI.
+
+#Problem 2
+
+a.
+Obtain the mean and standard deviation of plasma iPGE separately for
+patients with and without hypercalcemia. Do you think there is enough
+evidence to conclude that the means of the two groups differ? (Later in
+this course we will study more formal ways to compare the two means.)
+
+```{r, message=FALSE}
+##load dataset
+HW2_PGE <- read_table2("~/Documents/GitHub/BIOS662/HW2_PGE.txt")
+
+##get mean and std of plasma IPGE for patients with and without hypercalcemia
+HW2_PGE_hyp <- HW2_PGE %>% filter(Hypercalcemia == 1)
+HW2_PGE_nohyp <- HW2_PGE %>% filter(Hypercalcemia == 0)
+
+data.frame(mean=c("hyp"=mean(HW2_PGE_hyp$iPGE),"nohyp"=mean(HW2_PGE_nohyp$iPGE)), std = c("hyp"= sd(HW2_PGE_hyp$iPGE),"nohyp"=sd(HW2_PGE_nohyp$iPGE)))
+
+```
+
+* Answer:
+The mean and standard deviation of iPGE for patients with hypercalcemia are 241.4545 and 144.45924, resptively. The mean and standard deviation of iPGE for patients without hypercalcemia are 147.5 and 46.17178, resptively. Since the number of samples in each group is small and the standard deviation of iPGE for patients with hypercalcemia is high, I do not think there is enough evidence to say the means of the two groups differ.
+
+b.
+Do part (c) of Problem 3.15 of the textbook.
+
+```{r}
+ggplot(HW2_PGE, aes(x=Ca, y=iPGE)) +
+    geom_point(shape=1) + 
+    geom_smooth(method=lm)
+```
+
+* Answer:
+To look at the association between serum calcium and iPGE, I plotted a scatterplot of serum calcium against iPGE and drew a regression line through the points with the confidence interval band. From the plot it seems tome that there is a positive but not particularly strong relationship between the two. This can be seem from the positive slope of the line and the confidence interval band. Since the band also covers the horizontal line, it does not seem that the relationship is strong.
+
+
+c.
+The values for one patient appear to be particularly anomalous.
+Identify this patient. Suppose it was determined that there had been an error in measuring the patient’s serum calcium.
+Suggest a value for serum calcium that would be more consistent with the patient’s plasma
+iPGE value and the pattern in the rest of the data.
+
+```{r}
+##identify anomalous patient
+ggplot(HW2_PGE, aes(y=Ca)) + geom_boxplot()
+
+anomalous_patient <- HW2_PGE %>% filter(Ca==18)
+anomalous_patient
+
+##remove outlier and build linear model of Ca against iPGE from the remaining data points
+HW2_PGE_wo_outlier <- HW2_PGE %>% filter(Ca!=18)
+ca_lm <- lm(Ca~iPGE, data=HW2_PGE_wo_outlier)
+
+##predict the more reasonal Ca value for anomalous patient
+predict.lm(ca_lm, anomalous_patient)
+```
+
+* Answer:
+I used a boxplot to look at the distribution of serum calcium of the patients in the dataset, and identified one to have an anomalous value of 18. I build a linear model on serum calcium against iPGE from the remaining data points and then predict the value of serum calcium for the anomalous patients based on his/her iPGE value. The suggested serum calcium value I got is 10.10737.
+
+d. 
+Without re-doing any of your calculations, what effect do you think
+changing the serum calcium value to the one you suggested would have
+on the means and standard deviations in the first part of this problem?
+
+* Answer: 
+Since the suggested value is a lot smaller than the original value and belongs to a patient with hypercalcemia, I think that changing the serum calcium value would have shifted down the mean and decrease the standard deviation of serum calcium in patients with hyperclacemia.

@@ -1,0 +1,139 @@
+---
+title: "BIOS 662 HW3"
+author: "I-Hsuan Claire Su"
+date: "09/25/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Problem 1
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readr)
+HW2_PGE <- read_table2("~/Documents/GitHub/BIOS662/HW2_PGE.txt")
+```
+
+a) Use a plot to decide whether the distribution of serum calcium is
+approximately normal.
+
+```{r, message=FALSE, warning=FALSE}
+qqnorm(HW2_PGE$Ca)
+```
+
+Answer: I graphed a quantile-quantile plot to assess whether the distribution is approximately normal. Since the points forms a straight line besides a clear outlier on the right-most side of the plot, I would assume the distribution to be approximatly normal.
+
+b) Calculate the sample mean and standard deviation for serum calcium,
+and construct a 95% confidence interval for the population mean serum
+calcium of such patients.
+
+```{r, message=FALSE, warning=FALSE}
+serum.ca.mean <- mean(HW2_PGE$Ca)
+serum.ca.mean
+
+serum.ca.sd <- sd(HW2_PGE$Ca)
+serum.ca.sd
+
+length(HW2_PGE$Ca) ##sample size is small (less than 30)
+t.test(HW2_PGE$Ca) ##use this function to calculate the CI for populaiton mean based on t-distribution
+
+##can also calculate CI from the two lines below using the formula we learned in class
+ca.mean.conf.lower <- serum.ca.mean - qt(0.975,20)*(serum.ca.sd/sqrt(21))
+ca.mean.conf.upper <- serum.ca.mean + qt(0.975,20)*(serum.ca.sd/sqrt(21))
+
+ca.mean.conf.lower
+ca.mean.conf.upper
+```
+
+Answer: 
+I used the `mean` and `sd` functions in R to obtain the sample mean and standard deviation, which are 11.27143 and 2.040623, respectively. 
+
+Since the data is approximately normal (from part a) but the sample size is less than 30 and we do not know the population variance, I used the sample mean, sample standard deviation and the t distribution with 20 degrees of freedom to estimate the 95% confidence interval for the population mean. I used the `t.test` function in R for computation, but also double-checked with using the formula we learned in class to compute the condfidence interval for mean when data is normal but population variance is unknown and the sample size is not sufficiently large. The confidence interval for the population mean serum calcium is (10.34255, 12.20031).
+
+c) Suppose that the sample size is doubled (but yielding the same mean
+and standard deviation). Determine the percentage change in the width
+of the 95% confidence interval. Repeat assuming a sample three times
+the original size
+
+```{r, message=FALSE, warning=FALSE}
+##confidence interval width of original sample size
+original.ci.width <- ca.mean.conf.upper-ca.mean.conf.lower
+
+##doubled sample size (n=42)
+double.ca.mean.conf.lower <- serum.ca.mean - qt(0.975, 41)*(serum.ca.sd/sqrt(42))
+double.ca.mean.conf.upper <- serum.ca.mean + qt(0.975, 41)*(serum.ca.sd/sqrt(42))
+double.ci.width <- double.ca.mean.conf.upper-double.ca.mean.conf.lower
+#percentage change in interval width
+((double.ci.width-original.ci.width)/original.ci.width)*100
+
+##three-time sample size (n=63)
+triple.ca.mean.conf.lower <- serum.ca.mean - qt(0.975,62)*(serum.ca.sd/sqrt(63))
+triple.ca.mean.conf.upper <- serum.ca.mean + qt(0.975,62)*(serum.ca.sd/sqrt(63))
+triple.ci.width <- triple.ca.mean.conf.upper-triple.ca.mean.conf.lower
+#percentage change in interval width
+((triple.ci.width-original.ci.width)/original.ci.width)*100
+```
+Answer: 
+When doubling or tripling the size of the sample, we would have suffiently large sample to approximate the t-distribution with the standard normal (since n > 30). However, to be more conservative in my estimates and have the intervals be more comparable, I choose to use the t-distribution as well as the formula we learned in class on estimate the confidence interval by sample mean, sample standard deviation, t distribution with 41 and 62 degrees of freedom respectively, and the increased sample size of 42 and 63. When doubling the sample size, I got the confidence interval of (`r round(double.ca.mean.conf.lower,3)`,`r round(double.ca.mean.conf.upper,3)`) and there to be an approximately 31.54% decrease in the width of the 95% confidence interval compared to that of the original. When tripling the sample size, I got the confidence interval of (`r round(triple.ca.mean.conf.lower,3)`,`r round(triple.ca.mean.conf.upper,3)`) and there to be an approximately 44.77% decrease in the width of the 95% confidence interval compared to that of the original. 
+
+d) Use the bootstrap method to obtain a 95% confidence interval for the
+population mean serum calcium of such patients.
+
+```{r, message=FALSE, warning=FALSE}
+nsamp <- 1000 ##number of bootstrap samples
+sample.mean.ca <- mean(HW2_PGE$Ca) ##sample mean
+sample.var.ca <- var(HW2_PGE$Ca) ##sample standard deviation
+n <- 21 ##size of sample to draw, also the original dataset size
+
+set.seed(4356)## set seed for simulation
+z_samples_matrix <- matrix(0,1,nsamp) ##create matrix to store the z stats from bootstrap sample
+
+##sample with replacement from dataset serum calcium to get bootstrap sample
+##for each sample, calculate z statistics and store in matrix
+for (i in 1:nsamp){
+  ds_ca_samp <- sample(HW2_PGE$Ca,size=n,replace=TRUE)
+  z_samples_matrix[i] <- (mean(ds_ca_samp)-sample.mean.ca)/(sqrt(var(ds_ca_samp)/n))
+}
+
+##get the 2.th and 97.5th quantile from the distribution creaed from our bootstrap samples
+lower.t <- quantile(z_samples_matrix, 0.975)
+upper.t <- quantile(z_samples_matrix, 0.025)
+
+##get the 95% confidence interval
+lower.mean.ci <- sample.mean.ca - lower.t*sqrt(sample.var.ca/n) 
+upper.mean.ci <- sample.mean.ca - upper.t*sqrt(sample.var.ca/n) 
+```
+
+Answer: I used R to create 1000 serum calcium bootstrap samples of size 21 from our original dataset. For each sample, I calulated the `Z*`. After getting the 1000 of the `Z*` from the bootstrap samples, I obtained the 2.5th and 97.5th quantiles of the bootstrap distribution to calculate the 95% confidence interval for the sample mean, which is (`r round(lower.mean.ci,3)`, `r round(upper.mean.ci,3)`).
+
+e) Calculate the sample median and obtain an exact 95% confidence
+interval for the population median serum calcium of such patients
+
+```{r, message=FALSE, warning=FALSE}
+##get sample median of serum calcium
+median(HW2_PGE$Ca)
+
+##double check that the r we pick gives us an interval that is at least 95%
+sum(dbinom(6:16,21,0.5))
+
+##get 95% confidence interval
+#order the dataset by serum calcium level ascendingly
+HW2_PGE_ordered_by_Ca <- HW2_PGE %>% arrange(Ca)
+#get the 6th and 16th order
+HW2_PGE_ordered_by_Ca[c(6,16),]
+```
+
+Answer: I used the R `median` function to calculate the sample median of serum calcium, which is 11.2. To obtain the 95% confidence interval of the median,  I used the table from the notes in class and choose r to be 6 since our sample size is 21. I double checked that the interval for this choice of r is at least 95% by summing up the probabilities of the binomial distribution with `n = 21` from 6 to 16. Therefore, the confidence interval is the 6th and 16th ordered statistics of the sample. Locating the 6th and 16th ordered serum calcium value gives the 95% confidnce interval for the population median serum calcium (10.1, 12.1).
+
+##Problem 2
+
+a) The sampling distribution of the mean is the normal distribution with mean 1.0 and variance 9/9 = 1.
+
+b) The probability can be calculated by subtracting the probability that the sample mean is less than 1 from the the probability that the sample mean is less than 2.85 using the normal distribution of mean 1 and standard deviation 1. Using the `pnorm` R function gives us the probability of approximately 0.468.
+```{r, message=FALSE, warning=FALSE}
+pnorm(2.85, 1, 1)- pnorm(1, 1, 1)
+```
+
+c) The sampling distribution of W is the normal distribution with mean 4 and variance 16. 

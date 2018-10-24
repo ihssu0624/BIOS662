@@ -1,0 +1,90 @@
+---
+title: "BIOS662_HW5_Appendix"
+author: "Claire Su"
+date: "2018/10/17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1:
+
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(tidyverse)
+HW2_PGE <- read_table2("~/Documents/GitHub/BIOS662/HW2_PGE.txt")
+HW2_PGE_hyp <- HW2_PGE %>% filter(Hypercalcemia==1) 
+HW2_PGE_nohyp <- HW2_PGE %>% filter(Hypercalcemia==0)
+
+ks.test(HW2_PGE_hyp$iPGE, HW2_PGE_nohyp$iPGE)
+```
+
+## Question 2:
+
+```{r, message=FALSE}
+fisher.test(matrix(c(21,2,2,8), nrow=2))
+```
+
+##Question 3:
+
+```{r}
+#a
+pi_1 <- 89/30603
+pi_2 <- 38/24245
+RR <- pi_1/pi_2
+RR
+
+#b
+OR <- (pi_1/(1-pi_1))/(pi_2/(1-pi_2))
+OR
+
+OR * exp(1.96*sqrt((1/38)+(1/89)+(1/24207)+(1/30514)))
+OR * exp(-1.96*sqrt((1/38)+(1/89)+(1/24207)+(1/30514)))
+
+#c
+100*(OR-RR)/RR
+```
+
+##Question 4
+```{r}
+##a
+Table6_12<-array(c(7,55,31,269,7,20,18,112,7,33,24,114,40,88,45,172,
+   34,50,24,55,27,55,24,58,30,34,17,17),
+      dim=c(2,2,7),
+      dimnames=list(CupsCoffee=c("GE5","LT5"),MIcase=c("Yes","No"),
+         Smoking=c("Never","Former","1-14","15-24","25-34","35-44","45+")))
+
+
+counts_by_coffee_intake <-apply(Table6_12,c(3,1), function(i){
+  return(i)
+})
+
+less_than_5 <- apply(counts_by_coffee_intake[,,1],1,sum)
+more_than_5 <- apply(counts_by_coffee_intake[,,2],1,sum)
+
+Table_p6_13<-array(c(less_than_5[1],more_than_5[1],less_than_5[2],more_than_5[2]),
+      dim=c(2,2),
+      dimnames=list(c(">=5","< 5"),c("MI", "Control"))
+      )
+Table_p6_13
+
+##b
+p_1 <- 152/(152+183)
+p_2 <- 335/(335+797)
+OR <- (p_1/(1-p_1))/(p_2/(1-p_2))
+OR
+
+OR * exp(1.96*sqrt((1/152)+(1/335)+(1/183)+(1/797)))
+OR * exp(-1.96*sqrt((1/152)+(1/335)+(1/183)+(1/797)))
+
+library(epitools)
+
+##verify answers in R for not taking smoke status into account
+oddsratio.wald(Table_p6_13)
+
+##calculate odds ratio for association btwn coffee and MI taking smoke status into account
+mantelhaen.test(Table6_12)
+```
+
